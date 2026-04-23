@@ -11,6 +11,8 @@ const sessionStore = useSessionStore();
 const inputText = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
 const commandPaletteRef = ref<InstanceType<typeof CommandPalette> | null>(null);
+const modePickerRef = ref<InstanceType<typeof ModePicker> | null>(null);
+const modelPickerRef = ref<InstanceType<typeof ModelPicker> | null>(null);
 
 // Track expanded thought sections by message id
 const expandedThoughts = ref<Set<string>>(new Set());
@@ -108,6 +110,14 @@ async function handleModelChange(modelId: string) {
   }
 }
 
+function onModelPickerOpen() {
+  modePickerRef.value?.close();
+}
+
+function onModePickerOpen() {
+  modelPickerRef.value?.close();
+}
+
 function isThoughtExpanded(messageId: string): boolean {
   return expandedThoughts.value.has(messageId);
 }
@@ -156,17 +166,21 @@ function getStatusIcon(status: string): string {
       <div class="header-right">
         <ModelPicker 
           v-if="availableModels.length > 0"
+          ref="modelPickerRef"
           :models="availableModels"
           :current-model-id="currentModelId"
           :disabled="isLoading"
           @change="handleModelChange"
+          @toggle="onModelPickerOpen"
         />
         <ModePicker 
           v-if="availableModes.length > 0"
+          ref="modePickerRef"
           :modes="availableModes"
           :current-mode-id="currentModeId"
           :disabled="isLoading"
           @change="handleModeChange"
+          @toggle="onModePickerOpen"
         />
         <span class="agent-name">{{ currentSession?.agentName }}</span>
       </div>

@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   change: [modelId: string];
+  toggle: [];
 }>();
 
 const isOpen = ref(false);
@@ -17,6 +18,8 @@ const isOpen = ref(false);
 const currentModel = computed(() => 
   props.models.find(m => m.modelId === props.currentModelId)
 );
+
+defineExpose({ close: () => { isOpen.value = false; } });
 
 function getModelIcon(modelId: string): string {
   const lower = modelId.toLowerCase();
@@ -32,6 +35,9 @@ function getModelIcon(modelId: string): string {
 function toggleDropdown() {
   if (!props.disabled) {
     isOpen.value = !isOpen.value;
+    if (isOpen.value) {
+      emit('toggle');
+    }
   }
 }
 

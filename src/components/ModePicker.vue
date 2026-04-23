@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   change: [modeId: string];
+  toggle: [];
 }>();
 
 const isOpen = ref(false);
@@ -17,6 +18,8 @@ const isOpen = ref(false);
 const currentMode = computed(() => 
   props.modes.find(m => m.id === props.currentModeId)
 );
+
+defineExpose({ close: () => { isOpen.value = false; } });
 
 function getModeIcon(modeId: string): string {
   switch (modeId.toLowerCase()) {
@@ -34,6 +37,9 @@ function getModeIcon(modeId: string): string {
 function toggleDropdown() {
   if (!props.disabled) {
     isOpen.value = !isOpen.value;
+    if (isOpen.value) {
+      emit('toggle');
+    }
   }
 }
 
@@ -142,7 +148,7 @@ if (typeof window !== 'undefined') {
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  right: 0;
   min-width: 240px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
