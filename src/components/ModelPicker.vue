@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import type { ModelInfo } from '../lib/types';
 
 const props = defineProps<{
@@ -14,10 +14,31 @@ const emit = defineEmits<{
 }>();
 
 const isOpen = ref(false);
+const searchQuery = ref('');
+const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const currentModel = computed(() => 
   props.models.find(m => m.modelId === props.currentModelId)
 );
+
+const filteredModels = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim();
+  if (!q) return props.models;
+  return props.models.filter(m =>
+    m.name.toLowerCase().includes(q) ||
+    m.modelId.toLowerCase().includes(q) ||
+    (m.description && m.description.toLowerCase().includes(q))
+  );
+});
+
+// Reset search and auto-focus when dropdown opens
+watch(isOpen, async (open) => {
+  if (open) {
+    searchQuery.value = '';
+    await nextTick();
+    searchInputRef.value?.focus();
+  }
+});
 
 defineExpose({ close: () => { isOpen.value = false; } });
 
@@ -76,20 +97,35 @@ if (typeof window !== 'undefined') {
     
     <Transition name="dropdown">
       <div v-if="isOpen" class="dropdown-menu" @click.stop>
-        <div 
-          v-for="model in models"
-          :key="model.modelId"
-          :class="['dropdown-item', { selected: model.modelId === currentModelId }]"
-          @click="selectModel(model.modelId)"
-        >
-          <span class="item-icon">{{ getModelIcon(model.modelId) }}</span>
-          <div class="item-content">
-            <span class="item-name">{{ model.name }}</span>
-            <span v-if="model.description" class="item-description">
-              {{ model.description }}
-            </span>
+        <div class="search-box">
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            placeholder="搜索模型..."
+            @keydown.stop
+          />
+        </div>
+        <div class="dropdown-list">
+          <div 
+            v-for="model in filteredModels"
+            :key="model.modelId"
+            :class="['dropdown-item', { selected: model.modelId === currentModelId }]"
+            @click="selectModel(model.modelId)"
+          >
+            <span class="item-icon">{{ getModelIcon(model.modelId) }}</span>
+            <div class="item-content">
+              <span class="item-name">{{ model.name }}</span>
+              <span v-if="model.description" class="item-description">
+                {{ model.description }}
+              </span>
+            </div>
+            <span v-if="model.modelId === currentModelId" class="check-mark">✓</span>
           </div>
-          <span v-if="model.modelId === currentModelId" class="check-mark">✓</span>
+          <div v-if="filteredModels.length === 0" class="no-results">
+            无匹配结果
+          </div>
         </div>
       </div>
     </Transition>
@@ -156,19 +192,60 @@ if (typeof window !== 'undefined') {
   right: 0;
   min-width: 280px;
   max-width: 360px;
-  max-height: 320px;
-  overflow-y: auto;
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 100;
+  overflow: hidden;
 }
 
 @media (prefers-color-scheme: dark) {
   .dropdown-menu {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
+}
+
+.search-box {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: var(--text-accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.dropdown-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.no-results {
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .dropdown-item {
